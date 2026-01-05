@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sun & Moon Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #001122, #003366);
+            color: white;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #sky {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: background 2s ease-in-out;
+        }
+
+        .celestial-body {
+            position: absolute;
+            border-radius: 50%;
+            transition: all 1s ease-in-out;
+        }
+
+        #sun {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #ffeb3b, #ff9800);
+            box-shadow: 0 0 100px #ffeb3b, 0 0 200px #ff9800;
+            animation: sunGlow 3s ease-in-out infinite alternate;
+        }
+
+        #moon {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at 30% 30%, #f5f5f5, #bdbdbd);
+            box-shadow: 0 0 50px rgba(245, 245, 245, 0.5);
+        }
+
+        .crater {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .crater1 { width: 8px; height: 8px; top: 20px; left: 25px; }
+        .crater2 { width: 12px; height: 12px; top: 35px; right: 20px; }
+        .crater3 { width: 6px; height: 6px; bottom: 25px; left: 30px; }
+        .crater4 { width: 10px; height: 10px; top: 15px; right: 35px; }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, white, transparent),
+                radial-gradient(2px 2px at 40px 70px, white, transparent),
+                radial-gradient(1px 1px at 90px 40px, white, transparent),
+                radial-gradient(1px 1px at 130px 80px, white, transparent),
+                radial-gradient(2px 2px at 160px 30px, white, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: twinkle 4s ease-in-out infinite alternate;
+            opacity: 0;
+        }
+
+        .clouds {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><circle cx="20" cy="10" r="8" fill="rgba(255,255,255,0.3)"/><circle cx="30" cy="10" r="10" fill="rgba(255,255,255,0.2)"/><circle cx="40" cy="10" r="6" fill="rgba(255,255,255,0.3)"/></svg>');
+            background-size: 300px 100px;
+            animation: drift 20s linear infinite;
+            opacity: 0.7;
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+
+        .info-item {
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .phase-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #666;
+            margin-left: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phase-light {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            border-radius: 50%;
+            transition: all 0.5s ease;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .time-slider {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.3);
+            outline: none;
+        }
+
+        @keyframes sunGlow {
+            0% { box-shadow: 0 0 100px #ffeb3b, 0 0 200px #ff9800; }
+            100% { box-shadow: 0 0 150px #ffeb3b, 0 0 250px #ff9800; }
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+
+        @keyframes drift {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(calc(100vw + 100px)); }
+        }
+
+        .horizon {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(to top, #2c5530, transparent);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="sky">
+            <div class="stars"></div>
+            <div class="clouds"></div>
+            <div class="horizon"></div>
+        </div>
+        
+        <div id="sun" class="celestial-body"></div>
+        
+        <div id="moon" class="celestial-body">
+            <div class="crater crater1"></div>
+            <div class="crater crater2"></div>
+            <div class="crater crater3"></div>
+            <div class="crater crater4"></div>
+        </div>
+
+        <div id="info-panel">
+            <h3>Celestial Information</h3>
+            <div class="info-item">
+                <span>Local Time:</span>
+                <span id="local-time"></span>
+            </div>
+            <div class="info-item">
+                <span>Sun Position:</span>
+                <span id="sun-position"></span>
+            </div>
+            <div class="info-item">
+                <span>Moon Position:</span>
+                <span id="moon-position"></span>
+            </div>
+            <div class="info-item">
+                <span>Moon Phase:</span>
+                <span id="moon-phase">
+                    <span class="phase-indicator">
+                        <div class="phase-light" id="phase-light"></div>
+                    </span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span>Sunrise:</span>
+                <span id="sunrise-time"></span>
+            </div>
+            <div class="info-item">
+                <span>Sunset:</span>
+                <span id="sunset-time"></span>
+            </div>
+            <div class="info-item">
+                <span>Location:</span>
+                <span id="location">Getting location...</span>
+            </div>
+        </div>
+
+        <div class="time-slider">
+            <input type="range" id="timeSlider" min="0" max="1440" value="0" step="1">
+            <div style="text-align: center; margin-top: 10px;">
+                <span>Time Control: <span id="slider-time"></span></span>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button onclick="toggleRealTime()">Real Time</button>
+            <button onclick="speedUp()">Speed Up</button>
+            <button onclick="slowDown()">Slow Down</button>
+            <button onclick="resetSimulation()">Reset</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script>
+        class CelestialSimulation {
+            constructor() {
+                this.isRealTime = true;
+                this.speedMultiplier = 1;
+                this.currentTime = new Date();
+                this.latitude = 40.7128;
+                this.longitude = -74.0060;
+                this.animationId = null;
+                
+                this.elements = {
+                    sun: document.getElementById('sun'),
+                    moon: document.getElementById('moon'),
+                    sky: document.getElementById('sky'),
+                    stars: document.querySelector('.stars'),
+                    localTime: document.getElementById('local-time'),
+                    sunPosition: document.getElementById('sun-position'),
+                    moonPosition: document.getElementById('moon-position'),
+                    moonPhase: document.getElementById('moon-phase'),
+                    phaseLight: document.getElementById('phase-light'),
+                    sunriseTime: document.getElementById('sunrise-time'),
+                    sunsetTime: document.getElementById('sunset-time'),
+                    location: document.getElementById('location'),
+                    timeSlider: document.getElementById('timeSlider'),
+                    sliderTime: document.getElementById('slider-time')
+                };
+
+                this.init();
+            }
+
+            async init() {
+                await this.getUserLocation();
+                this.setupEventListeners();
+                this.startSimulation();
+            }
+
+            async getUserLocation() {
+                try {
+                    if (navigator.geolocation) {
+                        const position = await new Promise((resolve, reject) => {
+                            navigator.geolocation.getCurrentPosition(resolve, reject);
+                        });
+                        
+                        this.latitude = position.coords.latitude;
+                        this.longitude = position.coords.longitude;
+                        
+                        await this.getLocationName();
+                    }
+                } catch (error) {
+                    console.warn('Geolocation failed, using default location (NYC)');
+                    this.elements.location.textContent = 'New York, NY (Default)';
+                }
+            }
+
+            async getLocationName() {
+                try {
+                    const response = await fetch(
+                        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${this.latitude}&longitude=${this.longitude}&localityLanguage=en`
+                    );
+                    const data = await response.json();
+                    this.elements.location.textContent = `${data.city || data.locality || 'Unknown'}, ${data.countryCode || ''}`;
+                } catch (error) {
+                    this.elements.location.textContent = `${this.latitude.toFixed(2)}, ${this.longitude.toFixed(2)}`;
+                }
+            }
+
+            setupEventListeners() {
+                this.elements.timeSlider.addEventListener('input', (e) => {
+                    const minutes = parseInt(e.target.value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    this.currentTime = new Date(today.getTime() + minutes * 60000);
+                    this.isRealTime = false;
+                    this.updateDisplay();
+                });
+
+                window.addEventListener('resize', () => this.updatePositions());
+            }
+
+            calculateSunPosition(date) {
+                const sunPos = SunCalc.getPosition(date, this.latitude, this.longitude);
+                const azimuth = sunPos.azimuth;
+                const altitude = sunPos.altitude;
+                
+                const x = Math.sin(azimuth) * (window.innerHeight * 0.4);
+                const y = -Math.sin(altitude) * (window.innerHeight * 0.4);
+                
+                return {
+                    x: window.innerWidth / 2 + x,
+                    y: window.innerHeight / 2 + y,
+                    altitude: altitude,
+                    azimuth: azimuth
+                };
+            }
+
+            calculateMoonPosition(date) {
+                const moonPos = SunCalc.getMoonPosition(date, this.latitude, this.longitude);
+                const azimuth = moonPos.azimuth;
+                const altitude = moonPos.altitude;
+                
+                const x = Math.sin(azimuth) * (window.innerHeight * 0.4);
+                const y = -Math.sin(altitude) * (window.innerHeight * 0.4);
+                
+                return {
+                    x: window.innerWidth / 2 + x,
+                    y: window.innerHeight / 2 + y,
+                    altitude: altitude,
+                    azimuth: azimuth
+                };
+            }
+
+            calculateMoonPhase(date) {
+                const moonIllumination = SunCalc.getMoonIllumination(date);
+                return {
+                    fraction: moonIllumination.fraction,
+                    phase: moonIllumination.phase,
+                    angle: moonIllumination.angle
+                };
+            }
+
+            updateSkyColor(sunAltitude) {
+                let skyColor;
+                const altitude = sunAltitude * (180 / Math.PI);
+                
+                if (altitude > 6) {
+                    skyColor = 'linear-gradient(to bottom, #87CEEB, #98D8E8)';
+                    this.elements.stars.style.opacity = '0';
+                } else if (altitude > -6) {
+                    const twilightProgress = (altitude + 6) / 12;
+                    const r = Math.round(135 + (255 - 135) * (1 - twilightProgress));
+                    const g = Math.round(206 + (165 - 206) * (1 - twilightProgress));
+                    const b = Math.round(235 + (0 - 235) * (1 - twilightProgress));
+                    skyColor = `linear-gradient(to bottom, rgb(${r},${g},${b}), #FF6B35)`;
+                    this.elements.stars.style.opacity = Math.max(0, 1 - twilightProgress);
+                } else if (altitude > -18) {
+                    const nightProgress = (altitude + 18) / 12;
+                    skyColor = `linear-gradient(to bottom, #001122, #003366)`;
+                    this.elements.stars.style.opacity = Math.max(0.3, 1 - nightProgress);
+                } else {
+                    skyColor = 'linear-gradient(to bottom, #000011, #001122)';
+                    this.elements.stars.style.opacity = '1';
+                }
+                
+                this.elements.sky.style.background = skyColor;
+            }
+
+            updateMoonPhaseDisplay(moonPhase) {
+                const phaseNames = [
+                    'New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous',
+                    'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent'
+                ];
+                
+                const phaseIndex = Math.round(moonPhase.phase * 8) % 8;
+                const phaseName = phaseNames[phaseIndex];
+                
+                this.elements.moonPhase.firstChild.textContent = phaseName;
+                
+                const illumination = moonPhase.fraction;
+                const phaseAngle = moonPhase.phase * 2 * Math.PI;
+                
+                if (illumination < 0.5) {
+                    this.elements.phaseLight.style.clipPath = `inset(0 ${(1 - illumination * 2) * 50}% 0 0)`;
+                } else {
+                    this.elements.phaseLight.style.clipPath = `inset(0 0 0 ${(illumination - 0.5) * 2 * 50}%)`;
+                }
+            }
+
+            updatePositions() {
+                const sunPos = this.calculateSunPosition(this.currentTime);
+                const moonPos = this.calculateMoonPosition(this.currentTime);
+                const moonPhase = this.calculateMoonPhase(this.currentTime);
+                
+                this.elements.sun.style.left = `${sunPos.x - 60}px`;
+                this.elements.sun.style.top = `${sunPos.y - 60}px`;
+                this.elements.sun.style.opacity = sunPos.altitude > -0.1 ? '1' : '0';
+                
+                this.elements.moon.style.left = `${moonPos.x - 40}px`;
+                this.elements.moon.style.top = `${moonPos.y - 40}px`;
+                this.elements.moon.style.opacity = moonPos.altitude > -0.1 ? '1' : '0.3';
+                
+                this.updateSkyColor(sunPos.altitude);
+                this.updateMoonPhaseDisplay(moonPhase);
+                
+                const sunTimes = SunCalc.getTimes(this.currentTime, this.latitude, this.longitude);
+                
+                this.elements.sunPosition.textContent = `Alt: ${(sunPos.altitude * 180 / Math.PI).toFixed(1)}°`;
+                this.elements.moonPosition.textContent = `Alt: ${(moonPos.altitude * 180 / Math.PI).toFixed(1)}°`;
+                this.elements.sunriseTime.textContent = moment(sunTimes.sunrise).format('HH:mm');
+                this.elements.sunsetTime.textContent = moment(sunTimes.sunset).format('HH:mm');
+            }
+
+            updateDisplay() {
+                this.elements.localTime.textContent = moment(this.currentTime).format('YYYY-MM-DD HH:mm:ss');
+                
+                const minutes = this.currentTime.getHours() * 60 + this.currentTime.getMinutes();
+                this.elements.timeSlider.value = minutes;
+                this.elements.sliderTime.textContent = moment(this.currentTime).format('HH:mm');
+                
+                this.updatePositions();
+            }
+
+            startSimulation() {
+                const animate = () => {
+                    if (this.isRealTime) {
+                        this.currentTime = new Date();
+                    } else {
+                        this.currentTime = new Date(this.currentTime.getTime() + (1000 * this.speedMultiplier));
+                    }
+                    
+                    this.updateDisplay();
+                    this.animationId = requestAnimationFrame(animate);
+                };
+                
+                animate();
+            }
+
+            toggleRealTime() {
+                this.isRealTime = !this.isRealTime;
+                if (this.isRealTime) {
+                    this.currentTime = new Date();
+                }
+            }
+
+            speedUp() {
+                this.speedMultiplier = Math.min(this.speedMultiplier * 2, 3600);
+                this.isRealTime = false;
+            }
+
+            slowDown() {
+                this.speedMultiplier = Math.max(this.speedMultiplier / 2, 1);
+            }
+
+            resetSimulation() {
+                this.isRealTime = true;
+                this.speedMultiplier = 1;
+                this.currentTime = new Date();
+            }
+        }
+
+        let simulation;
+
+        function toggleRealTime() {
+            simulation.toggleRealTime();
+        }
+
+        function speedUp() {
+            simulation.speedUp();
+        }
+
+        function slowDown() {
+            simulation.slowDown();
+        }
+
+        function resetSimulation() {
+            simulation.resetSimulation();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            simulation = new CelestialSimulation();
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (simulation && simulation.animationId) {
+                cancelAnimationFrame(simulation.animationId);
+            }
+        });
+    </script>
+</body>
+</html>
